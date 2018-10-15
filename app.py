@@ -1,0 +1,48 @@
+import os, sys
+from flask import Flask, request
+from pymessenger import Bot
+
+app = Flask(__name__)
+
+PAGE_ACCESS_TOKEN = "EAAKaFBgPTZAkBAGI5XPfPJda7davc3lUVeepyilD0TZAdbQlLQj7Vl4WVeUyRXB7UPisVoamYSLLPhMns4sQZAIC0LDYAuspUhMGcl1OfcT958CeWLBpoHnumJkAeF1EaMCsX38ygIMCWY2I4w41GUJ75OdX1JSp3nmuZBg2BwZDZD"
+
+bot = Bot(PAGE_ACCESS_TOKEN)
+
+@app.route('/', methods=['GET'])
+def verify():
+	#web hook verification
+	if request.args.get("hub.mode") == "subscribe" and request.args.get("hub.challenge"):
+		if not request.args.get("hub.verify_token") == "hello":
+			return "Verification mismatch", 403
+		return request.args["hub.challenge"], 200
+	return "Hello World", 200
+
+@app.route('/', methods=['POST'])
+def webhook():
+	data = request.get_json()
+	print(data)
+	sys.stdout.flush()
+	
+	if data ['object'] == 'page':
+		for entry in data['entry']:
+			for messaging_event in entry['messaging']:
+
+				#ID'S
+				sender_id = messaging_event['sender']['id']
+				recipient_id = messaging_event['recipient']['id']
+
+				if messaging_event.get('message'):
+					if 'text' in messaging_event['message']:
+						messaging_text = messaging_event['message']['text']
+					else:
+						messaging_text = 'No text'
+
+					#echo response
+					response = messaging_text
+
+					bot.send_text_message(sender_id, response)
+
+	return "ok", 200
+
+if __name__ == "__main__":
+	app.run(debug = True, port = 80)
